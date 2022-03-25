@@ -1,11 +1,12 @@
+from math import atan2, pi
 import time
+import numpy as np
 import dataclasses
 from bitstruct import pack, unpack
 from periphery import GPIO, I2C
 
 
-i2c = I2C("/dev/i2c-1")
-magnetometer_address = 0x0C
+
 
 reset = lambda: [I2C.Message([0xFF]), I2C.Message([0x00], read=True)]
 start_burst_mode = lambda: [I2C.Message([0x1F]), I2C.Message([0x00], read=True)]
@@ -45,23 +46,43 @@ class MagnetometerReading(MagnetometerStatus):
     @property
     # Return reading in microTesla
     def vec(self):
-        return (self.raw_x / .981, self.raw_y / .981, self.raw_z / 1.581)
+        # Hallconf = 0xC by default
+        # setup() sets the max OSR and DIG_FILT values
+        return np.array((self.raw_x / .751,
+                self.raw_y / .751,
+                self.raw_z / 1.210))
+
+    @property
+    def heading(self):
+        head = atan2(self.vec[1], self.vec[0]) * 180 / pi
+
+        return head % 360
+    
+
+class Magnetometer:
+    def __init__(self, i2c_device="/dev/i2c-1", address=0x0C) -> None:
+        self.i2c = I2C(i2c_device)
+        self.address = address
+
+        self.setup()
+        
+    def setup(self):
+        # Set max digital filtering and oversampling,  expect 200ms per reading
+        self.i2c.transfer(self.address, write_register(0x02, 0b0000000000011111))
 
 
-# Set max digital filtering and oversampling,  expect 200ms per reading
-i2c.transfer(magnetometer_address, write_register(0x02, 0b0000000000011111))
 
-while True:
-    i2c.transfer(magnetometer_address, start_measurement())
-    time.sleep(0.25)
+    def run(self):
+        while True:
+            self.i2c.transfer(self.address, start_measurement())
+            time.sleep(0.25)
 
-    # Read measurement
-    msgs = read_measurement()
-    i2c.transfer(magnetometer_address, msgs)
-    reading = MagnetometerReading(*unpack(MagnetometerReading.bitpacking, bytes(msgs[1].data)))
+            # Read measurement
+            msgs = read_measurement()
+            self.i2c.transfer(self.address, msgs)
+            reading = MagnetometerReading(*unpack(MagnetometerReading.bitpacking, bytes(msgs[1].data)))
 
-    print(reading)
-    print(f"{reading.vec[0]:.1f} ,{reading.vec[1]:.1f}, {reading.vec[2]:.1f}")
+            print(f"{reading.vec[0]:.1f} ,{reading.vec[1]:.1f}, {reading.vec[2]:.1f}")
+            print(f"{reading.heading}")
 
 
-i2c.close()
