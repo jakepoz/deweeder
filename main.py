@@ -7,6 +7,13 @@ from periphery import GPIO, I2C
 i2c = I2C("/dev/i2c-1")
 magnetometer_address = 0x0C
 
+reset = lambda: [I2C.Message([0xFF]), I2C.Message([0x00], read=True)]
+start_burst_mode = lambda: [I2C.Message([0x1F]), I2C.Message([0x00], read=True)]
+stop_burst_mode =  lambda: [I2C.Message([0x80]), I2C.Message([0x00], read=True)]
+start_measurement =  lambda: [I2C.Message([0x3F]), I2C.Message([0x00], read=True)]
+read_measurement = lambda: [I2C.Message([0x4F]), I2C.Message([0x00] * 9, read=True)]
+write_register = lambda addr, val: [I2C.Message([0b01100000, (val >> 8) & 0xFF, val & 0xFF, addr << 2]), I2C.Message([0x00], read=True)]
+
 @dataclasses.dataclass
 class MagnetometerStatus:
     bitpacking = "b1b1b1b1b1b1u2"
@@ -36,16 +43,15 @@ class MagnetometerReading(MagnetometerStatus):
         return (self.raw_t - 46244) / 45.2 + 25
 
 
-
+# Set max digital filtering and oversampling,  expect 200ms per reading
+i2c.transfer(magnetometer_address, write_register(0x02, 0b0000000000011111))
 
 while True:
-    # Start measurement
-    msgs = [I2C.Message([0x3F]), I2C.Message([0x00], read=True)]
-    i2c.transfer(magnetometer_address, msgs)
-    time.sleep(0.2)
+    i2c.transfer(magnetometer_address, start_measurement())
+    time.sleep(0.25)
 
     # Read measurement
-    msgs = [I2C.Message([0x4F]), I2C.Message([0x00] * 9, read=True)]
+    msgs = read_measurement()
     i2c.transfer(magnetometer_address, msgs)
     reading = MagnetometerReading(*unpack(MagnetometerReading.bitpacking, bytes(msgs[1].data)))
     # burst_mode, woc_mode, sm_mode, error, single_error_detected, reset, d, t, x, y, z = unpack(magnetometer_burst, bytes(msgs[1].data))
@@ -53,6 +59,7 @@ while True:
     # print(burst_mode, error, t, msgs[1].data[1], msgs[1].data[2])
     # print(x, y, z)
     # print("")
+    print(reading)
     print(reading.temp_c)
 
 
