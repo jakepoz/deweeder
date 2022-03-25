@@ -42,6 +42,11 @@ class MagnetometerReading(MagnetometerStatus):
         #46244 LSB at 25C
         return (self.raw_t - 46244) / 45.2 + 25
 
+    @property
+    # Return reading in microTesla
+    def vec(self):
+        return (self.raw_x / .981, self.raw_y / .981, self.raw_z / 1.581)
+
 
 # Set max digital filtering and oversampling,  expect 200ms per reading
 i2c.transfer(magnetometer_address, write_register(0x02, 0b0000000000011111))
@@ -54,13 +59,9 @@ while True:
     msgs = read_measurement()
     i2c.transfer(magnetometer_address, msgs)
     reading = MagnetometerReading(*unpack(MagnetometerReading.bitpacking, bytes(msgs[1].data)))
-    # burst_mode, woc_mode, sm_mode, error, single_error_detected, reset, d, t, x, y, z = unpack(magnetometer_burst, bytes(msgs[1].data))
 
-    # print(burst_mode, error, t, msgs[1].data[1], msgs[1].data[2])
-    # print(x, y, z)
-    # print("")
     print(reading)
-    print(reading.temp_c)
+    print(f"{reading.vec[0]:.1f} ,{reading.vec[1]:.1f}, {reading.vec[2]:.1f}")
 
 
 i2c.close()
