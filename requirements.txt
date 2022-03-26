@@ -6,3 +6,6 @@ bitstruct
 
 # For connecting to peripherals
 periphery
+
+# For making NTRIP requests and others
+requests

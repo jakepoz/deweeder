@@ -8,10 +8,11 @@ compass = Magnetometer(i2c_device="/dev/i2c-1", address=0x0C)
 #compass.run()
 
 ntrip = NtripClient(caster="rtgpsout.unavco.org",
-                    user=f"{os.getenv('NTRIP_USER')}:{os.getenv('NTRIP_PASSWORD')}",
-                    verbose=True)
-
-ntrip.readData()                    
+                    user=os.getenv('NTRIP_USER'),
+                    password=os.getenv('NTRIP_PASSWORD'),
+                    mountpoint="SEAT_RTCM3")
+                    
+ntrip.run()                
 
 gps = GPS(serial_port="/dev/ttyACM0")
 #gps.run()
