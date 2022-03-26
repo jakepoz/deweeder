@@ -56,7 +56,7 @@ class MagnetometerReading(MagnetometerStatus):
     def heading(self):
         head = atan2(self.vec[1], self.vec[0]) * 180 / pi
 
-        return head % 360
+        return head
     
 
 class Magnetometer:
@@ -67,6 +67,10 @@ class Magnetometer:
         self.setup()
         
     def setup(self):
+        # reset
+        self.i2c.transfer(self.address, reset())
+        time.sleep(0.25)
+
         # Set max digital filtering and oversampling,  expect 200ms per reading
         self.i2c.transfer(self.address, write_register(0x02, 0b0000000000011111))
 
@@ -82,6 +86,7 @@ class Magnetometer:
             self.i2c.transfer(self.address, msgs)
             reading = MagnetometerReading(*unpack(MagnetometerReading.bitpacking, bytes(msgs[1].data)))
 
+            print(reading)
             print(f"{reading.vec[0]:.1f} ,{reading.vec[1]:.1f}, {reading.vec[2]:.1f}")
             print(f"{reading.heading}")
 

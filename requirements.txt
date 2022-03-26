@@ -1,0 +1,8 @@
+# For reading and writing ublox messages
+ubxtranslator
+
+# For more easily packing and unpacking bitstructs on various peripherals
+bitstruct
+
+# For connecting to peripherals
+periphery
