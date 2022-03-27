@@ -1,27 +1,13 @@
-import requests
+import aiohttp
 
-class NtripClient:
-    def __init__(self, caster, user, password, mountpoint, port=2101) -> None:
-        self.caster = caster
-        self.user = user
-        self.password = password
-        self.mountpoint = mountpoint
-        self.port = port
+NTRIP_HEADERS = {
+        "Ntrip-Version": "Ntrip/2.0",
+        "User-Agent": "NTRIP deweederbot/1.0"
+}
 
-    def run(self):
-        req = requests.Request("GET", 
-                                url=f"http://{self.caster}:{self.port}/{self.mountpoint}",
-                                headers={
-                                    "Ntrip-Version": "Ntrip/2.0",
-                                    "User-Agent": "NTRIP deweederbot/1.0"
-                                },
-                                auth=(self.user, self.password))
+async def ntrip_client(caster, user, password, mountpoint, port=2101):
+    async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(user, password), headers=NTRIP_HEADERS) as session:
+        response = await session.get(f"http://{caster}:{port}/{mountpoint}")
 
-        r = req.prepare()
-        s = requests.Session()
-        res = s.send(r, stream=True)
-
-        assert res.status_code == 200
-
-        for data in res.iter_content():
+        async for data in response.content.iter_any():
             print(data)

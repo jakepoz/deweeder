@@ -8,4 +8,4 @@ bitstruct
 periphery
 
 # For making NTRIP requests and others
-requests
+aiohttp
