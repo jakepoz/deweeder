@@ -1,4 +1,7 @@
 import aiohttp
+import logging
+
+logger = logging.getLogger(__name__)
 
 NTRIP_HEADERS = {
         "Ntrip-Version": "Ntrip/2.0",
@@ -10,4 +13,4 @@ async def ntrip_client(caster, user, password, mountpoint, port=2101):
         response = await session.get(f"http://{caster}:{port}/{mountpoint}")
 
         async for data in response.content.iter_any():
-            print(data)
+            logger.info(f"Got NTRIP DATA: {len(data)}")

@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from math import atan2, pi
 import time
 import numpy as np
@@ -5,8 +7,7 @@ import dataclasses
 from bitstruct import pack, unpack
 from periphery import GPIO, I2C
 
-
-
+logger = logging.getLogger(__name__)
 
 reset = lambda: [I2C.Message([0xFF]), I2C.Message([0x00], read=True)]
 start_burst_mode = lambda: [I2C.Message([0x1F]), I2C.Message([0x00], read=True)]
@@ -76,18 +77,16 @@ class Magnetometer:
 
 
 
-    def run(self):
+    async def run(self):
         while True:
             self.i2c.transfer(self.address, start_measurement())
-            time.sleep(0.25)
+            await asyncio.sleep(1.0)
 
             # Read measurement
             msgs = read_measurement()
             self.i2c.transfer(self.address, msgs)
             reading = MagnetometerReading(*unpack(MagnetometerReading.bitpacking, bytes(msgs[1].data)))
 
-            print(reading)
-            print(f"{reading.vec[0]:.1f} ,{reading.vec[1]:.1f}, {reading.vec[2]:.1f}")
-            print(f"{reading.heading}")
+            logger.info(reading)
 
 

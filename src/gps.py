@@ -1,6 +1,5 @@
-import time
+import asyncio
 import numpy as np
-import dataclasses
 import struct
 
 from periphery import Serial
@@ -101,7 +100,7 @@ class GPS:
 
         return True
 
-    def run(self):
+    async def run(self):
 
         parser = Parser([NAV_CLS, ACK_CLS])
         while True:
@@ -110,7 +109,7 @@ class GPS:
                 msg = parser.receive_from(self.port)
                 print(msg)
 
-                time.sleep(0.5)
+                await asyncio.sleep(0.5)
             except (ValueError, IOError) as err:
                 print(err)
             
