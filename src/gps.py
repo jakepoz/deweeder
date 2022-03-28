@@ -110,7 +110,12 @@ class GPS:
                 msg = parser.receive_from(self.port)
                 logger.info(msg)
 
-                await self.ntrip
+                rtcm_msg = await self.ntrip.__anext__()
+                logger.info(f"GPS got RTCM Message {len(rtcm_msg)}")
+                self.port.write(rtcm_msg)
+
+                # msg = parser.receive_from(self.port)
+                # logger.info(msg)
             except (ValueError, IOError) as err:
                 logger.exception("GPS Error")
             

@@ -9,3 +9,6 @@ periphery
 
 # For making NTRIP requests and others
 aiohttp
+
+# For parsing RTCM frames from NTRIP casters
+pyrtcm
