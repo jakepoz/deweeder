@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import numpy as np
 import struct
 
@@ -7,6 +8,7 @@ from periphery import Serial
 from ubxtranslator.core import Parser
 from ubxtranslator.predefined import NAV_CLS, ACK_CLS
 
+logger = logging.getLogger(__name__)
 
 # Class message values
 ack_ms= {
@@ -50,9 +52,9 @@ time_ms= {
 }
 
 class GPS:
-    def __init__(self, serial_port="/dev/ttyACM0", baudrate=38400) -> None:
+    def __init__(self, serial_port="/dev/ttyACM0", baudrate=38400, ntrip_client=None) -> None:
         self.port = Serial(serial_port, baudrate=baudrate)
-        
+        self.ntrip = ntrip_client
         self.setup()
         
     def setup(self):
@@ -101,16 +103,15 @@ class GPS:
         return True
 
     async def run(self):
-
         parser = Parser([NAV_CLS, ACK_CLS])
         while True:
             try:
                 self.send_message(NAV_CLS, nav_ms.get('PVT'))
                 msg = parser.receive_from(self.port)
-                print(msg)
+                logger.info(msg)
 
-                await asyncio.sleep(0.5)
+                await self.ntrip
             except (ValueError, IOError) as err:
-                print(err)
+                logger.exception("GPS Error")
             
 

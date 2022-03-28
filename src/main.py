@@ -16,11 +16,11 @@ ntrip = ntrip_client(caster="rtgpsout.unavco.org",
                 password=os.getenv('NTRIP_PASSWORD'),
                 mountpoint="SEAT_RTCM3")                        
 
-gps = GPS(serial_port="/dev/ttyACM0")
+gps = GPS(serial_port="/dev/ttyACM0", ntrip_client=ntrip)
 #gps.run()
 
 async def main():
-    await asyncio.gather(ntrip, 
+    await asyncio.gather(gps.run(), 
                          compass.run())
     
 

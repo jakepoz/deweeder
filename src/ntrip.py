@@ -11,6 +11,9 @@ NTRIP_HEADERS = {
 async def ntrip_client(caster, user, password, mountpoint, port=2101):
     async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(user, password), headers=NTRIP_HEADERS) as session:
         response = await session.get(f"http://{caster}:{port}/{mountpoint}")
+        assert response.status == 200
+        logger.warning("Started new Ntrip session")
 
         async for data in response.content.iter_any():
             logger.info(f"Got NTRIP DATA: {len(data)}")
+            #yield data
