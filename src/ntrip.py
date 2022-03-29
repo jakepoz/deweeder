@@ -36,13 +36,21 @@ def calc_crc24q(message: bytes) -> int:
                 crc ^= POLY
     return crc & 0xFFFFFF
 
-# Ntrip message format
-# 8 bits - Preamble 0xd3
-# 6 bits - reserved, usually 0's but could be anything
-# 10 bits - message length in bytes
-# 0-1023 bytes
-# 24 bits - QualComm definition CRC-24Q
+
 def parse_rtcm(buf: ByteString) -> Tuple[ByteString, ByteString]:
+    """
+    Parses a bytearray and decodes RTCM messages one at a time.
+    Returns a full RTCM message, plus any remaining buffer to process.
+
+        Ntrip message format
+        8 bits - Preamble 0xd3
+        6 bits - reserved, usually 0's but could be anything
+        10 bits - message length in bytes
+        0-1023 bytes
+        24 bits - QualComm definition CRC-24Q
+
+    :return (RTCM message, remaining buffer)
+    """
     start = 0
 
     while start < len(buf):
@@ -51,17 +59,19 @@ def parse_rtcm(buf: ByteString) -> Tuple[ByteString, ByteString]:
             continue
 
         msglen = (buf[start + 1] & 0b00000011 > 8) | buf[start + 2] 
-        data = buf[start + 3 : start + 3 + msglen]
+        
+        if len(buf) < start + 3 + msglen + 3:
+            return None, buf
+
         crc = int.from_bytes(buf[start + 3 + msglen: start + 3 + msglen + 3], "big")
 
         if calc_crc24q(buf[start: start + 3 + msglen]) == crc:
-            return buf[start: 3 + msglen + 3], buf[start + 3 + msglen + 3:]
+            return buf[start: start + 3 + msglen + 3], buf[start + 3 + msglen + 3:]
         else:
             logger.warning("CRC Did not match on RTCM packet")
             return None, buf[start + 3 + msglen + 3:]
 
     return None, bytearray()
-
 
 
 
