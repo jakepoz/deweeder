@@ -1,6 +1,7 @@
 import aiohttp
+import asyncio
 import logging
-import io
+
 from typing import ByteString, Tuple
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,9 @@ def parse_rtcm(buf: ByteString) -> Tuple[ByteString, ByteString]:
             start += 1
             continue
 
+        if len(buf) < start + 6:
+            return None, buf
+
         msglen = (buf[start + 1] & 0b00000011 > 8) | buf[start + 2] 
         
         if len(buf) < start + 3 + msglen + 3:
@@ -74,25 +78,34 @@ def parse_rtcm(buf: ByteString) -> Tuple[ByteString, ByteString]:
     return None, bytearray()
 
 
+class NtripClient:
+    def __init__(self, caster:str, user:str, password:str, mountpoint:str, port:int=2101) -> None:
+        self.caster = caster
+        self.user = user
+        self.password = password
+        self.mountpoint = mountpoint
+        self.port = port
 
-async def ntrip_client(caster:str, user:str, password:str, mountpoint:str, port:int=2101):
-    rtr_buf = bytearray()
+        self.queue = asyncio.Queue()
 
-    async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(user, password), headers=NTRIP_HEADERS) as session:
-        response = await session.get(f"http://{caster}:{port}/{mountpoint}")
-        assert response.status == 200
-        logger.warning("Started new Ntrip session")
+    async def run(self):
+        rtr_buf = bytearray()
 
-        async for data in response.content.iter_any():
-            logger.info(f"Got NTRIP DATA: {len(data)}, {len(rtr_buf)}")
-            rtr_buf += data
-            
-            #Parse the message stream, and yield only full RTCM messages at a time, to be forwarded along to the GPS module
-            while True:
-                rtcm_msg, rtr_buf = parse_rtcm(rtr_buf)
+        async with aiohttp.ClientSession(auth=aiohttp.BasicAuth(self.user, self.password), headers=NTRIP_HEADERS) as session:
+            response = await session.get(f"http://{self.caster}:{self.port}/{self.mountpoint}")
+            assert response.status == 200
+            logger.warning("Started new Ntrip session")
 
-                if rtcm_msg:
-                    logger.info("RTCM Received")
-                    yield rtcm_msg
-                else:
-                    break
+            async for data in response.content.iter_any():
+                logger.info(f"Got NTRIP DATA: {len(data)}, {len(rtr_buf)}")
+                rtr_buf += data
+                
+                #Parse the message stream, and yield only full RTCM messages at a time, to be forwarded along to the GPS module
+                while True:
+                    rtcm_msg, rtr_buf = parse_rtcm(rtr_buf)
+
+                    if rtcm_msg:
+                        logger.info("RTCM Received")
+                        await self.queue.put(rtcm_msg)
+                    else:
+                        break

@@ -110,12 +110,19 @@ class GPS:
                 msg = parser.receive_from(self.port)
                 logger.info(msg)
 
-                rtcm_msg = await self.ntrip.__anext__()
-                logger.info(f"GPS got RTCM Message {len(rtcm_msg)}")
-                self.port.write(rtcm_msg)
+                # Send all pending RTCM messages
+                await asyncio.sleep(0.1)
+                while True:
+                    try:
+                        rtcm_msg = self.ntrip.queue.get_nowait()
+                        logger.info(f"GPS got RTCM Message {len(rtcm_msg)}")
+                        self.port.write(rtcm_msg)
+                    except asyncio.QueueEmpty:
+                        break
 
                 # msg = parser.receive_from(self.port)
                 # logger.info(msg)
+                
             except (ValueError, IOError) as err:
                 logger.exception("GPS Error")
             
