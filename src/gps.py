@@ -112,13 +112,13 @@ class GPS:
 
                 # Send all pending RTCM messages
                 await asyncio.sleep(0.1)
-                # while True:
-                #     try:
-                #         rtcm_msg = self.ntrip.queue.get_nowait()
-                #         logger.info(f"GPS got RTCM Message {len(rtcm_msg)}")
-                #         self.port.write(rtcm_msg)
-                #     except asyncio.QueueEmpty:
-                #         break
+                while True:
+                    try:
+                        rtcm_msg = self.ntrip.queue.get_nowait()
+                        logger.info(f"GPS got RTCM Message {len(rtcm_msg)}")
+                        self.port.write(rtcm_msg)
+                    except asyncio.QueueEmpty:
+                        break
 
                 # msg = parser.receive_from(self.port)
                 # logger.info(msg)
