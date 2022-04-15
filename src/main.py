@@ -1,6 +1,8 @@
 import asyncio
 import os
+import signal
 import logging
+from typing import Optional
 
 from .magnetometer import Magnetometer
 from .gps import GPS
@@ -14,6 +16,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 logging.basicConfig(level=logging.INFO)
+
 
 #compass = Magnetometer(i2c_device="/dev/i2c-1", address=0x0C)
 
@@ -39,14 +42,10 @@ async def robot_main():
 app = Starlette(debug=True, routes=[
     Route('/', homepage),
 ])
-
-
-async def server_main():
-    server = Server(config=Config(app, host='0.0.0.0', port=8000, loop="asyncio" ))
-    await server.serve()
+server = Server(config=Config(app, host='0.0.0.0', port=8000, loop="asyncio" ))
 
 async def main():
-    await asyncio.gather(robot_main(), server_main())
+    await asyncio.wait([robot_main(), server.serve()], return_when=asyncio.FIRST_COMPLETED)
 
 if __name__ == "__main__":
     asyncio.run(main())
