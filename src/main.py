@@ -15,12 +15,13 @@ logging.basicConfig(level=logging.INFO)
 
 #compass = Magnetometer(i2c_device="/dev/i2c-1", address=0x0C)
 
-ntrip = NtripClient(caster="rtgpsout.unavco.org",
-                user=os.getenv('NTRIP_USER'),
-                password=os.getenv('NTRIP_PASSWORD'),
-                mountpoint="SEAT_RTCM3")                        
+gps = GPS(serial_port="/dev/ttyACM0")
 
-gps = GPS(serial_port="/dev/ttyACM0", ntrip_client=ntrip)
+ntrip = NtripClient(caster="rtgpsout.unavco.org",
+                    user=os.getenv('NTRIP_USER'),
+                    password=os.getenv('NTRIP_PASSWORD'),
+                    mountpoint="SEAT_RTCM3",
+                    gps=gps)                        
 
 drive = DriveMotor(pwm_chip=2, pwm_line=0)
 

@@ -1,11 +1,13 @@
 import asyncio
 import logging
+from typing import Tuple
 import numpy as np
+import time
 import struct
 
 from periphery import Serial
 
-from ubxtranslator.core import Parser
+from ubxtranslator.core import Parser, Cls
 from ubxtranslator.predefined import NAV_CLS, ACK_CLS
 
 logger = logging.getLogger(__name__)
@@ -52,13 +54,11 @@ time_ms= {
 }
 
 class GPS:
-    def __init__(self, serial_port="/dev/ttyACM0", baudrate=38400, ntrip_client=None) -> None:
+    def __init__(self, serial_port="/dev/ttyACM0", baudrate=38400) -> None:
         self.port = Serial(serial_port, baudrate=baudrate)
-        self.ntrip = ntrip_client
-        self.setup()
         
     async def setup(self):
-       pass
+        self.queue = asyncio.Queue()
 
     def send_message(self, ubx_class, ubx_id, ubx_payload = None):
         """
@@ -102,29 +102,36 @@ class GPS:
 
         return True
 
+    async def check_nav_each_second(self):
+        while True:
+            await self.queue.put((NAV_CLS, nav_ms.get('PVT')))
+            await asyncio.sleep(1.0)
+
     async def run(self):
         parser = Parser([NAV_CLS, ACK_CLS])
-        while True:
-            try:
-                self.send_message(NAV_CLS, nav_ms.get('PVT'))
-                msg = parser.receive_from(self.port)
-                logger.info(msg)
 
-                # Send all pending RTCM messages
-                while True:
-                    try:
-                        rtcm_msg = await self.ntrip.queue.get()
-                        logger.info(f"GPS got RTCM Message {len(rtcm_msg)}")
-                        self.port.write(rtcm_msg)
-                    except asyncio.QueueEmpty:
-                        break
-                    except asyncio.TimeoutError:
-                        break
+        asyncio.create_task(self.check_nav_each_second())
 
-                # msg = parser.receive_from(self.port)
-                # logger.info(msg)
-                
-            except (ValueError, IOError) as err:
-                logger.exception("GPS Error")
+        try:
+            # Send all pending messages
+            while True:
+                try:
+                    message = await self.queue.get()
+
+                    if type(message) is tuple:
+                        ubx_class, ubx_id = message
+                        self.send_message(ubx_class, ubx_id)
+                        msg = parser.receive_from(self.port)
+                        logger.info(msg)
+                    else:
+                        logger.info(f"GPS got RTCM Message {len(message)}")
+                        self.port.write(message)
+                except asyncio.QueueEmpty:
+                    break
+                except asyncio.TimeoutError:
+                    break
+
+        except (ValueError, IOError) as err:
+            logger.exception("GPS Error")
             
 

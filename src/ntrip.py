@@ -4,6 +4,8 @@ import logging
 
 from typing import ByteString, Tuple
 
+from src.gps import GPS
+
 logger = logging.getLogger(__name__)
 
 NTRIP_HEADERS = {
@@ -79,15 +81,16 @@ def parse_rtcm(buf: ByteString) -> Tuple[ByteString, ByteString]:
 
 
 class NtripClient:
-    def __init__(self, caster:str, user:str, password:str, mountpoint:str, port:int=2101) -> None:
+    def __init__(self, caster:str, user:str, password:str, mountpoint:str, port:int=2101, gps: GPS=None) -> None:
         self.caster = caster
         self.user = user
         self.password = password
         self.mountpoint = mountpoint
         self.port = port
+        self.gps = gps
 
     async def setup(self):
-        self.queue = asyncio.Queue()
+        pass
 
     async def run(self):
         rtr_buf = bytearray()
@@ -106,7 +109,6 @@ class NtripClient:
                     rtcm_msg, rtr_buf = parse_rtcm(rtr_buf)
 
                     if rtcm_msg:
-                        logger.info("RTCM Received")
-                        await self.queue.put(rtcm_msg)
+                        await self.gps.queue.put(rtcm_msg)
                     else:
                         break
