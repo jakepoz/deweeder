@@ -26,13 +26,12 @@ drive = DriveMotor(pwm_chip=2, pwm_line=0)
 
 server = Server(config=Config(webapp, host='0.0.0.0', port=8000, loop="asyncio"))
 
-async def robot_main():
-    await asyncio.gather(gps.run(), 
-                         ntrip.run())
-                        # compass.run())
+async def robot_main(*modules):
+    await asyncio.wait([module.setup() for module in modules], return_when=asyncio.ALL_COMPLETED)
+    await asyncio.wait([module.run() for module in modules], return_when=asyncio.FIRST_EXCEPTION)
 
 async def main():
-    await asyncio.wait([robot_main(), server.serve()], return_when=asyncio.FIRST_COMPLETED)
+    await asyncio.wait([robot_main(ntrip, gps), server.serve()], return_when=asyncio.FIRST_COMPLETED)
 
 if __name__ == "__main__":
     asyncio.run(main())

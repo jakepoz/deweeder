@@ -86,6 +86,7 @@ class NtripClient:
         self.mountpoint = mountpoint
         self.port = port
 
+    async def setup(self):
         self.queue = asyncio.Queue()
 
     async def run(self):

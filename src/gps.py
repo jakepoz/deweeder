@@ -57,7 +57,7 @@ class GPS:
         self.ntrip = ntrip_client
         self.setup()
         
-    def setup(self):
+    async def setup(self):
        pass
 
     def send_message(self, ubx_class, ubx_id, ubx_payload = None):
@@ -111,13 +111,14 @@ class GPS:
                 logger.info(msg)
 
                 # Send all pending RTCM messages
-                await asyncio.sleep(0.1)
                 while True:
                     try:
-                        rtcm_msg = self.ntrip.queue.get_nowait()
+                        rtcm_msg = await self.ntrip.queue.get()
                         logger.info(f"GPS got RTCM Message {len(rtcm_msg)}")
                         self.port.write(rtcm_msg)
                     except asyncio.QueueEmpty:
+                        break
+                    except asyncio.TimeoutError:
                         break
 
                 # msg = parser.receive_from(self.port)
