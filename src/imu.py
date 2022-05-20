@@ -17,10 +17,9 @@ class IMU:
         self.i2c = I2C(i2c_device)
         self.address = address
         
-    def setup(self):
+    async def setup(self):
         pass
-
-
+    
     async def run(self):
         while True:
             await asyncio.sleep(1.0)

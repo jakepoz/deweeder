@@ -75,7 +75,6 @@ class Magnetometer:
         self.i2c.transfer(self.address, write_register(0x02, 0b0000000000011111))
 
 
-
     async def run(self):
         while True:
             self.i2c.transfer(self.address, start_measurement())
