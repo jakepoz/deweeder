@@ -34,7 +34,7 @@ cell_volts = AD7999( i2c_device="/dev/i2c-1", address=0x29, vref=5.0, ch_divider
 #                    mountpoint="SEAT_RTCM3",
 #                    gps=gps)                        
 
-drive = DriveMotor(pwm_chip=2, pwm_line=0)
+drive = DriveMotor(pwm_chip=2, pwm_line=0, gpio_enable_chip="/dev/gpiochip4", gpio_enable_line=10)
 steer = SteeringMotor(pwm_chip=0, pwm_line=0, gpio_enable_chip="/dev/gpiochip0", gpio_enable_line=8)
 
 server = Server(config=Config(webapp, host='0.0.0.0', port=8000, loop="asyncio"))
@@ -44,7 +44,7 @@ async def robot_main(*modules):
     await asyncio.wait([module.run() for module in modules], return_when=asyncio.FIRST_EXCEPTION)
 
 async def main():
-    await asyncio.wait([robot_main(cell_volts), server.serve()], return_when=asyncio.FIRST_COMPLETED)
+    await asyncio.wait([robot_main(drive), server.serve()], return_when=asyncio.FIRST_COMPLETED)
 
 if __name__ == "__main__":
     asyncio.run(main())

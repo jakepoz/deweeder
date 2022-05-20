@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import random
 
-from periphery import PWM
+from periphery import PWM, GPIO
 
 
 logger = logging.getLogger(__name__)
@@ -14,15 +14,19 @@ PWM_MIN = .0010
 PWM_MAX = .0020
 
 class DriveMotor:
-    def __init__(self, pwm_chip=0, pwm_line=0) -> None:
+    def __init__(self, pwm_chip=0, pwm_line=0, gpio_enable_chip="/dev/gpiochip0", gpio_enable_line=0) -> None:
         self.pwm_chip = pwm_chip
         self.pwm_line = pwm_line
         self.pwm = PWM(pwm_chip, pwm_line)
+        self.gpio_enable = GPIO(gpio_enable_chip, gpio_enable_line, "out")
 
     async def setup(self):
        self.pwm.frequency = 1 / PWM_PERIOD
        self.pwm.duty_cycle = PWM_ZERO / PWM_PERIOD
        self.pwm.enable()
+
+       self.gpio_enable.write(True)
+       await asyncio.sleep(3)
 
     async def _calibrate(self):
         logger.warning("Starting ESC calibration process, enabling neutral PWM signal")
@@ -46,7 +50,7 @@ class DriveMotor:
     async def _wear_in_motor(self):
         new_duty = PWM_ZERO / PWM_PERIOD
         self.pwm.duty_cycle = new_duty  
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
 
         while True:
             target_duty = random.uniform(PWM_MIN / PWM_PERIOD, PWM_MAX / PWM_PERIOD)
@@ -57,3 +61,5 @@ class DriveMotor:
                 self.pwm.duty_cycle = new_duty
                 await asyncio.sleep(0.02)
     
+    async def run(self):
+        await self._wear_in_motor()

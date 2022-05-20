@@ -14,7 +14,7 @@ PWM_MIN = .0010
 PWM_MAX = .0020
 
 class SteeringMotor:
-    def __init__(self, pwm_chip=0, pwm_line=0, gpio_enable_chip="/dev/gpiochip0", gpio_enable_line=8) -> None:
+    def __init__(self, pwm_chip=0, pwm_line=0, gpio_enable_chip="/dev/gpiochip0", gpio_enable_line=0) -> None:
         self.pwm_chip = pwm_chip
         self.pwm_line = pwm_line
         self.pwm = PWM(pwm_chip, pwm_line)
