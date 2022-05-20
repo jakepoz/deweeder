@@ -65,9 +65,8 @@ class Magnetometer:
         self.i2c = I2C(i2c_device)
         self.address = address
 
-        self.setup()
         
-    def setup(self):
+    async def setup(self):
         # reset
         self.i2c.transfer(self.address, reset())
         time.sleep(0.25)

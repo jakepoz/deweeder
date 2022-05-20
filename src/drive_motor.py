@@ -18,7 +18,6 @@ class DriveMotor:
         self.pwm_chip = pwm_chip
         self.pwm_line = pwm_line
         self.pwm = PWM(pwm_chip, pwm_line)
-        self.setup()
 
     async def setup(self):
        self.pwm.frequency = 1 / PWM_PERIOD

@@ -19,7 +19,6 @@ class SteeringMotor:
         self.pwm_line = pwm_line
         self.pwm = PWM(pwm_chip, pwm_line)
         self.gpio_enable = GPIO(gpio_enable_chip, gpio_enable_line, "out")
-        self.setup()
 
     async def setup(self):
        self.pwm.frequency = 1 / PWM_PERIOD
